@@ -43,7 +43,7 @@ def parse_args():
     parser.add_argument('--lora_alpha', type=int, default=32, help='lora_alpha')
     parser.add_argument('--lora_dropout', type=float, default=0.05, help='lora dropout')
     parser.add_argument('--resume_from_checkpoint', type=str, default=None, help='恢复训练的checkpoint路径')
-    parser.add_argument('--prompt_text', type=str, default='根据以下提示词，输出广告词：', help='统一添加在所有数据前的指令文本')
+    parser.add_argument('--prompt_text', type=str, default='', help='统一添加在所有数据前的指令文本')
     return parser.parse_args()
 
 
