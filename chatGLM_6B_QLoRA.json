@@ -1,0 +1,20 @@
+{
+    "output_dir": "saved_files/chatGLM_6B_QLoRA_t32",
+    "per_device_train_batch_size": 4,
+    "gradient_accumulation_steps": 8,
+    "per_device_eval_batch_size": 4,
+    "learning_rate": 1e-3,
+    "num_train_epochs": 3.0,
+    "lr_scheduler_type": "linear",
+    "warmup_ratio": 0.05,
+    "logging_steps": 10,
+    "save_strategy": "steps",
+    "save_steps": 50,
+    "evaluation_strategy": "steps",
+    "eval_steps": 50,
+    "optim": "adamw_torch",
+    "fp16": false,
+    "remove_unused_columns": false,
+    "ddp_find_unused_parameters": false,
+    "seed": 42
+}
