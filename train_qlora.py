@@ -30,6 +30,13 @@ from peft import (
 from peft.utils import TRANSFORMERS_MODELS_TO_LORA_TARGET_MODULES_MAPPING
 
 
+_compute_dtype_map = {
+    'fp32': torch.float32,
+    'fp16': torch.float16,
+    'bf16': torch.bfloat16
+}
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description='ChatGLM-6B QLoRA')
     parser.add_argument('--train_args_json', type=str, required=True, help='TrainingArguments的json文件')
@@ -44,6 +51,8 @@ def parse_args():
     parser.add_argument('--lora_dropout', type=float, default=0.05, help='lora dropout')
     parser.add_argument('--resume_from_checkpoint', type=str, default=None, help='恢复训练的checkpoint路径')
     parser.add_argument('--prompt_text', type=str, default='', help='统一添加在所有数据前的指令文本')
+    parser.add_argument('--compute_dtype', type=str, default='fp32',
+                        choices=['fp32', 'fp16', 'bf16'], help='计算数据类型')
     return parser.parse_args()
 
 
@@ -129,7 +138,7 @@ def train(global_args):
     q_config = BitsAndBytesConfig(load_in_4bit=True,
                                   bnb_4bit_quant_type='nf4',
                                   bnb_4bit_use_double_quant=True,
-                                  bnb_4bit_compute_dtype=torch.float32)
+                                  bnb_4bit_compute_dtype=_compute_dtype_map[global_args.compute_dtype])
 
     model = AutoModel.from_pretrained(global_args.model_name_or_path,
                                       quantization_config=q_config,

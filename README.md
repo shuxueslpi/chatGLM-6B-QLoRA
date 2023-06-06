@@ -77,10 +77,12 @@ pip install -q -U git+https://github.com/huggingface/accelerate.git
 ```shell
 python3 train_qlora.py \
 --train_args_json chatGLM_6B_QLoRA.json \
+--model_name_or_path THUDM/chatglm-6b \
 --train_data_path data/train.jsonl \
 --eval_data_path data/dev.jsonl \
 --lora_rank 4 \
---lora_dropout 0.05
+--lora_dropout 0.05 \
+--compute_dtype fp32
 ```
 
 其中`chatGLM_6B_QLoRA.json`文件为所有transformers框架支持的TrainingArguments，参考：https://huggingface.co/docs/transformers/main_classes/trainer#transformers.TrainingArguments
@@ -109,6 +111,11 @@ python3 train_qlora.py \
     "seed": 42
 }
 ```
+
+
+对参数`compute_type`，可选`fp16`, `bf16`和`fp32`，实测使用`fp16`, `bf16`这两种计算速度有明显提升，相同的epoch只需要大约一半的时间，但出现loss收敛较慢的情况，默认选择`fp32`.
+
+关于这个参数的选择，可能需要根据数据集做不同的尝试。
 
 ### 训练截图
 
