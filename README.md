@@ -4,6 +4,18 @@
 
 本项目使用peft库，实现了ChatGLM-6B模型4bit的QLoRA高效微调，可以在一张RTX3060上完成全部微调过程。
 
+内容包括：
+
+1. 环境配置
+2. 数据集介绍
+3. chatGLM-6B的QLoRA训练完整流程
+4. chatGLM-6B的推理流程
+ 
+   - 使用adapter做推理
+   - 合并adapter和basemodel做推理
+   - 量化合并后的模型做推理
+5. QLoRA微调前后的效果比对
+
 ## 环境配置
 
 ### 环境依赖
@@ -55,9 +67,7 @@ pip install -q -U git+https://github.com/huggingface/peft.git
 pip install -q -U git+https://github.com/huggingface/accelerate.git
 ```
 
-## 使用方法
-
-### 数据集说明
+## 数据集介绍
 
 数据集使用ADGEN广告数据集，任务为根据instruction生成一段广告词，见本项目data文件夹，每条样本为一行，形式为：
 
@@ -70,7 +80,7 @@ pip install -q -U git+https://github.com/huggingface/accelerate.git
 
 其中训练数据`train.jsonl`共计114599条，验证数据`dev.jsonl`共计1070条。
 
-### 启动训练
+## 训练流程
 
 进入本项目目录，训练启动命令如下：
 
@@ -117,7 +127,7 @@ python3 train_qlora.py \
 
 关于这个参数的选择，可能需要根据数据集做不同的尝试。
 
-### 训练截图
+#### 训练截图
 
 - 显存占用，batch_size = 4
 
@@ -134,7 +144,7 @@ python3 train_qlora.py \
 tensorboard --logdir runs --port 'your port' --bind_all
 ```
 
-## 推理示例
+## 模型推理
 
 训练过程会保存adapter的checkpoint及最终的adapter文件，默认配置下每个文件的情况如下：
 
@@ -150,9 +160,9 @@ tensorboard --logdir runs --port 'your port' --bind_all
 
 保存的adapter只有约7M的大小。
 
-### 推理代码
+### 使用adapter推理
 
-使用如下代码进行推理：
+推理代码如下：
 
 ```python
 import torch
@@ -185,7 +195,68 @@ response, history = model.chat(tokenizer=tokenizer, query=input_text)
 print(f'微调后: \n{response}')
 ```
 
-### 微调前后推理对比
+### 合并Lora model和base model、量化模型推理
+
+首先需要说明，本项目目前使用的peft为dev的版本，在合并lora model和base model时，会报错，见https://github.com/huggingface/peft/pull/535
+
+因此要完成模型的融合及量化，先将peft的版本回退到0.3.0，后期等稳定版的0.4.0放出后，应该不需要此步骤。
+
+执行：
+
+```shell
+pip install peft==0.3.0
+```
+
+或者可以为此步骤单独建立一个python虚拟环境。
+
+接下来执行脚本：
+
+```shell
+python3 merge_lora_and_quantize.py \
+--lora_path saved_files/chatGLM_6B_QLoRA_t32 \
+--output_path /tmp/merged_qlora_model_4bit \
+--qbits 4
+```
+
+注意，请完整拷贝此项目，脚本运行时会将`remote_scripts`文件夹中的所有chatGLM官方的脚本复制到最终输出的目录中，方便加载模型。
+
+运行完毕后，会输出：
+```text
+2023-06-07 07:04:34.139 | INFO     | __main__:main:57 - Lora model和base model成功merge, 并量化为4bits, 保存在/tmp/merged_qlora_model_4bit
+```
+
+表示模型完成合并和量化，最终保存的目录中各文件如下：
+
+```text
+-rw-r--r-- 1 root root  883 Jun  7 07:04 config.json
+-rw-r--r-- 1 root root 4.3K Jun  7 07:04 configuration_chatglm.py
+-rw-r--r-- 1 root root  147 Jun  7 07:04 generation_config.json
+-rw-r--r-- 1 root root 2.6M Jun  7 07:04 ice_text.model
+-rw-r--r-- 1 root root  59K Jun  7 07:04 modeling_chatglm.py
+-rw-r--r-- 1 root root 3.7G Jun  7 07:04 pytorch_model.bin
+-rw-r--r-- 1 root root  31K Jun  7 07:04 quantization.py
+-rw-r--r-- 1 root root  125 Jun  7 07:04 special_tokens_map.json
+-rw-r--r-- 1 root root  17K Jun  7 07:04 tokenization_chatglm.py
+-rw-r--r-- 1 root root  495 Jun  7 07:04 tokenizer_config.json
+```
+
+
+可以用以下代码加载量化后的模型：
+
+```python
+from transformers import AutoModel, AutoTokenizer
+
+model_path = '/tmp/merged_qlora_model_4bit'
+
+tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+model = AutoModel.from_pretrained(model_path, trust_remote_code=True).half().cuda()
+
+input_text = '类型#裙*版型#显瘦*风格#文艺*风格#简约*图案#印花*图案#撞色*裙下摆#压褶*裙长#连衣裙*裙领型#圆领'
+response, history = model.chat(tokenizer=tokenizer, query=input_text)
+print(response)
+```
+
+## QLoRA微调前后推理对比
 
 ```text
 输入：
@@ -209,7 +280,7 @@ print(f'微调后: \n{response}')
 一款简约而不简单的连衣裙，采用撞色的印花点缀，打造文艺气息，简约的圆领，修饰脸型。衣袖和裙摆的压褶，增添设计感，修身的版型，勾勒出窈窕的身材曲线。
 ```
 
-### 关于灾难性遗忘
+#### 关于灾难性遗忘
 
 看到很多朋友表示微调后的模型出现灾难性疑问的问题，无法对微调数据集以外的问题进行正常反应，我对微调后的模型进行了一些其他问题的测试。
 
