@@ -14,7 +14,10 @@
    - 使用adapter做推理
    - 合并adapter和basemodel做推理
    - 量化合并后的模型做推理
-5. QLoRA微调前后的效果比对
+   
+5. 推理性能测试
+
+6. QLoRA微调前后的效果比对
 
 ## 环境配置
 
@@ -256,6 +259,53 @@ response, history = model.chat(tokenizer=tokenizer, query=input_text)
 print(response)
 ```
 
+## 推理性能测试
+
+对训练完的模型，我们和原始官方提供的模型进行性能对比，分为以下四种模型：
+
+1. 官方非量化模型，即`THUDM/chatglm-6b`
+2. 官方4bit量化模型，即`THUDM/chatglm-6b-int4`
+3. qlora训练后的非量化模型，即运行以下命令得到的，记作`qlora-model`：
+    ```shell
+    python3 merge_lora_and_quantize.py \
+    --lora_path saved_files/chatGLM_6B_QLoRA_t32 \
+    --output_path /tmp/qlora-model \
+    --qbits 0
+    ```
+   注意，qbits参数不为4或8时，会在融合lora model和base model后，以非量化的方式保存完整精度的模型。
+4. qlora训练后的4bit量化模型，即运行以下命令得到的，记作`qlora-model-4bit`：
+    ```shell
+    python3 merge_lora_and_quantize.py \
+    --lora_path saved_files/chatGLM_6B_QLoRA_t32 \
+    --output_path /tmp/qlora-model-4bit \
+    --qbits 4
+    ```
+
+我们对推理性能的测试，使用本项目的脚本：`inference_test.py`，统计单位时间内，模型能推理生成的token数量为衡量指标，详见代码逻辑。
+
+代码运行方法：
+
+```shell
+python3 inference_test.py --model_path THUDM/chatglm-6b
+```
+
+测试的环境如下：
+
+- cuda12
+- RTX3090
+
+经过测试，有如下结果：
+
+|                | qlora-model-4bit | THUDM/chatglm-6b-int4 | qlora-model | THUDM/chatglm-6b |
+|----------------|------------------|-----------------------|-------------|------------------|
+| token_number/s | 18.93            | 16.93                 | 31.92       | 31.88            |
+| gpu memory use |  6G              | 6G                    | 13G         | 13G              |
+
+结论：
+
+1. 经过qlora训练后保存的模型，无论是否量化为4bit，推理速度与官方原始模型基本一致，int4的情况略有提高
+2. 4bit量化后的模型，推理效率均有明显降低，经过查阅资料，这里4bit的量化方法是一种以空间换时间的方法，具体见：https://huggingface.co/blog/zh/hf-bitsandbytes-integration
+
 ## QLoRA微调前后推理对比
 
 ```text
@@ -321,7 +371,7 @@ print(response)
 
 2. 下雨天，骑电瓶车时需要防止被雨淋湿，因为被雨淋湿之后会对身体造成伤害，所以骑电瓶车时需要防止淋雨，并且要穿防水衣。
 
-3. 骑电瓶车时需要注意保护自己的脖子，因为脖子比较脆弱，容易被压到，所以骑电瓶车时需要注意保护脖子。```
+3. 骑电瓶车时需要注意保护自己的脖子，因为脖子比较脆弱，容易被压到，所以骑电瓶车时需要注意保护脖子。
 ```
 
 异常响应，和以上正常响应一样的问题，多运行几次，会出现以下异常：
@@ -340,4 +390,5 @@ print(response)
 
 - https://github.com/THUDM/ChatGLM-6B
 - https://huggingface.co/blog/4bit-transformers-bitsandbytes
+- https://huggingface.co/blog/zh/hf-bitsandbytes-integration
 - https://github.com/mymusise/ChatGLM-Tuning

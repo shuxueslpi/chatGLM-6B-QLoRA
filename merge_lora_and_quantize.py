@@ -65,10 +65,15 @@ def parse_args():
     parser.add_argument('--lora_path', type=str, required=True, help='QLoRA训练后保存模型的目录')
     parser.add_argument('--output_path', type=str, default='/tmp/merged_qlora_model', help='最终保存合并，量化后的模型目录')
     parser.add_argument('--qbits', type=int, default=4, help='模型量化位数')
+    parser.add_argument('--device', type=str, default='auto', help='device_map')
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_args()
-    main(lora_path=args.lora_path, output_path=args.output_path, qbits=args.qbits)
+    if args.device != 'auto':
+        device_map = {'': args.device}
+    else:
+        device_map = 'auto'
+    main(lora_path=args.lora_path, output_path=args.output_path, qbits=args.qbits, device_map=device_map)
 
