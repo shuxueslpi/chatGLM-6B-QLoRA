@@ -304,7 +304,9 @@ python3 inference_test.py --model_path THUDM/chatglm-6b
 结论：
 
 1. 经过qlora训练后保存的模型，无论是否量化为4bit，推理速度与官方原始模型基本一致，int4的情况略有提高
-2. 4bit量化后的模型，推理效率均有明显降低，经过查阅资料，这里4bit的量化方法是一种以空间换时间的方法，具体见：https://huggingface.co/blog/zh/hf-bitsandbytes-integration
+2. 4bit量化后的模型，推理效率均有明显降低，经过查阅资料，这里4bit的量化方法是一种以时间换空间的方法，具体见：https://huggingface.co/blog/zh/hf-bitsandbytes-integration
+
+因此，理论上qlora训练后保存的adapter模型可以和原始模型合并后，再导入其他加速引擎进行加速。
 
 ## QLoRA微调前后推理对比
 
