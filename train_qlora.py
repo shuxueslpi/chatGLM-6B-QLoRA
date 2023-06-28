@@ -70,7 +70,8 @@ def tokenize_func(example, tokenizer, global_args, ignore_label_id=-100):
     if len(a_ids) > global_args.max_output_length - 1:  # 1 - eos
         a_ids = a_ids[: global_args.max_output_length - 1]
     input_ids = tokenizer.build_inputs_with_special_tokens(q_ids, a_ids)
-    question_length = input_ids.index(tokenizer.bos_token_id)
+    # question_length = input_ids.index(tokenizer.bos_token_id)
+    question_length = len(q_ids) + 2  # chatglm1 - gmask, bos, chatglm2 - gmask, sop
     labels = [ignore_label_id] * question_length + input_ids[question_length:]
     return {'input_ids': input_ids, 'labels': labels}
 
@@ -131,6 +132,7 @@ def train(global_args):
 
     set_seed(global_args.seed)
     hf_train_args.seed = global_args.seed
+    model_max_length = global_args.max_input_length + global_args.max_output_length
 
     tokenizer = AutoTokenizer.from_pretrained(global_args.model_name_or_path, trust_remote_code=True)
 
@@ -183,7 +185,8 @@ def train(global_args):
     if global_args.eval_data_path:
         eval_dataset = get_datset(global_args.eval_data_path, tokenizer, global_args)
 
-    data_collator = DataCollatorForChatGLM(pad_token_id=tokenizer.pad_token_id)
+    data_collator = DataCollatorForChatGLM(pad_token_id=tokenizer.pad_token_id,
+                                           max_length=model_max_length)
 
     # train
     trainer = LoRATrainer(

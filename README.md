@@ -2,14 +2,14 @@
 
 ## 介绍
 
-本项目使用peft库，实现了ChatGLM-6B模型4bit的QLoRA高效微调，可以在一张RTX3060上完成全部微调过程。
+本项目使用peft库，实现了ChatGLM-6B/chatGLM2-6B模型4bit的QLoRA高效微调，可以在一张RTX3060上完成全部微调过程。
 
 内容包括：
 
 1. 环境配置
 2. 数据集介绍
-3. chatGLM-6B的QLoRA训练完整流程
-4. chatGLM-6B的推理流程
+3. ChatGLM-6B/chatGLM2-6B的QLoRA训练完整流程
+4. ChatGLM-6B/chatGLM2-6B的推理流程
  
    - 使用adapter做推理
    - 合并adapter和basemodel做推理
@@ -98,6 +98,8 @@ python3 train_qlora.py \
 --compute_dtype fp32
 ```
 
+训练chatGLM2-6B只要修改`model_name_or_path`参数为`THUDM/chatglm2-6b`.
+
 其中`chatGLM_6B_QLoRA.json`文件为所有transformers框架支持的TrainingArguments，参考：https://huggingface.co/docs/transformers/main_classes/trainer#transformers.TrainingArguments
 
 默认如下，可根据实际情况自行修改：
@@ -130,16 +132,19 @@ python3 train_qlora.py \
 
 关于这个参数的选择，可能需要根据数据集做不同的尝试。
 
-#### 训练截图
+#### 训练截图（chatGLM-6B）
 
 - 显存占用，batch_size = 4
-
-    ![img.png](pics/nvidia-smi.png)
+  
+  ![img.png](pics/nvidia-smi.png)
+  注意：经过实测，chatGLM2-6B训练时的显存占用较大，建议用24G显存的显卡。
 
 - loss曲线，训练一个epoch，可以看到loss还在下降
     
   ![img.png](pics/train_loss.png)
   ![img.png](pics/eval_loss.png)
+  
+  经过实测在训练一个epoch的情况下，chatGLM-6Bloss在3.4左右，chatGLM2-6B的loss可以到2.9
 
 默认会在`saved_files/chatGLM_6B_QLoRA_t32`文件夹中生成一个`runs`的文件夹，可进入`saved_files/chatGLM_6B_QLoRA_t32`文件夹，用以下命令启动tensorboard，查看训练曲线：
 
@@ -218,10 +223,13 @@ pip install peft==0.3.0
 python3 merge_lora_and_quantize.py \
 --lora_path saved_files/chatGLM_6B_QLoRA_t32 \
 --output_path /tmp/merged_qlora_model_4bit \
+--remote_scripts_dir remote_scripts/chatglm-6b \
 --qbits 4
 ```
 
-注意，请完整拷贝此项目，脚本运行时会将`remote_scripts`文件夹中的所有chatGLM官方的脚本复制到最终输出的目录中，方便加载模型。
+注意，请完整拷贝此项目，脚本运行时会将`remote_scripts_dir`文件夹中的所有chatGLM官方的脚本复制到最终输出的目录中，方便加载模型。
+
+如果是合并chatglm2-6b则把参数`remote_scripts_dir`修改为`remote_scripts/chatglm-6b`
 
 运行完毕后，会输出：
 ```text
@@ -259,7 +267,7 @@ response, history = model.chat(tokenizer=tokenizer, query=input_text)
 print(response)
 ```
 
-## 推理性能测试
+## 推理性能测试（chatGLM2-6B的待补充）
 
 对训练完的模型，我们和原始官方提供的模型进行性能对比，分为以下四种模型：
 
@@ -308,7 +316,7 @@ python3 inference_test.py --model_path THUDM/chatglm-6b
 
 理论上qlora训练保存的adapter模型可以和原始模型合并后，再导入其他加速引擎进行加速。
 
-## QLoRA微调前后推理对比
+## QLoRA微调前后推理对比（chatGLM2-6B结果待补充）
 
 ```text
 输入：
