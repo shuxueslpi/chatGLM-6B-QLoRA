@@ -144,7 +144,7 @@ python3 train_qlora.py \
   ![img.png](pics/train_loss.png)
   ![img.png](pics/eval_loss.png)
   
-  经过实测在训练一个epoch的情况下，chatGLM-6Bloss在3.4左右，chatGLM2-6B的loss可以到2.9
+  经过实测在训练一个epoch的情况下，chatGLM-6B的loss在3.4左右，chatGLM2-6B的loss可以到2.9
 
 默认会在`saved_files/chatGLM_6B_QLoRA_t32`文件夹中生成一个`runs`的文件夹，可进入`saved_files/chatGLM_6B_QLoRA_t32`文件夹，用以下命令启动tensorboard，查看训练曲线：
 
