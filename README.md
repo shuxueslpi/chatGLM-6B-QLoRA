@@ -19,6 +19,18 @@
 
 6. QLoRA微调前后的效果比对
 
+特别说明：
+
+无特别理由，强烈推荐使用chatGLM2-6B，理由如下：
+
+1. chatGLM2-6B的推理效率比chatGLM-6B快30%~50%，见本文档`5. 推理性能测试章节`
+2. chatGLM2-6B在微调前的输出质量就远高于chatGLM-6B，微调后的loss值更低
+3. chatGLM2-6B几乎没有灾难性疑问的情况，微调后对数据集外的问题仍然能输出高质量的答案
+
+但需要注意，chatGLM2-6B微调时显存占用较高，12G显存的情况下，`per_device_train_batch_size`只能设置为1，24G显存可以设置为4，相比chatGLM-6B要大很多。
+
+推理时的显存占用二者并无太大差异。
+
 ## 环境配置
 
 ### 环境依赖
@@ -69,6 +81,8 @@ pip install -q -U git+https://github.com/huggingface/transformers.git
 pip install -q -U git+https://github.com/huggingface/peft.git
 pip install -q -U git+https://github.com/huggingface/accelerate.git
 ```
+
+注：理论上更高版本的transformers库应该可以正常运行本项目。
 
 ## 数据集介绍
 
@@ -137,9 +151,10 @@ python3 train_qlora.py \
 - 显存占用，batch_size = 4
   
   ![img.png](pics/nvidia-smi.png)
-  注意：经过实测，chatGLM2-6B训练时的显存占用较大，建议用24G显存的显卡。
+  
+  注：经过实测，chatGLM2-6B训练时的显存占用较大，建议用24G显存的显卡。默认配置下微调chatGLM2-6B，per_device_train_batch_size = 4时占用显存就达到21G左右，比chatGLM-6B大很多。
 
-- loss曲线，训练一个epoch，可以看到loss还在下降
+- chatGLM-6B的loss曲线，训练一个epoch，可以看到loss还在下降
     
   ![img.png](pics/train_loss.png)
   ![img.png](pics/eval_loss.png)
@@ -154,7 +169,7 @@ tensorboard --logdir runs --port 'your port' --bind_all
 
 ## 模型推理
 
-训练过程会保存adapter的checkpoint及最终的adapter文件，默认配置下每个文件的情况如下：
+训练过程会保存adapter的checkpoint及最终的adapter文件，默认配置下chatGLM-6B每个文件的情况如下：
 
 ```text
 -rw-r--r-- 1 root root  417 Jun  2 21:14 adapter_config.json
@@ -267,27 +282,47 @@ response, history = model.chat(tokenizer=tokenizer, query=input_text)
 print(response)
 ```
 
-## 推理性能测试（chatGLM2-6B的待补充）
+## 推理性能测试
 
-对训练完的模型，我们和原始官方提供的模型进行性能对比，分为以下四种模型：
+对训练完的模型，我们和原始官方提供的模型进行性能对比，分为以下8种模型：
 
-1. 官方非量化模型，即`THUDM/chatglm-6b`
-2. 官方4bit量化模型，即`THUDM/chatglm-6b-int4`
-3. qlora训练后的非量化模型，即运行以下命令得到的，记作`qlora-model`：
+1. chatGLM-6B官方非量化模型，即`THUDM/chatglm-6b`
+2. chatGLM-6B官方4bit量化模型，即`THUDM/chatglm-6b-int4`
+3. qlora训练后的chatGLM-6B非量化模型，即运行以下命令得到的，记作`qlora-model`：
     ```shell
     python3 merge_lora_and_quantize.py \
     --lora_path saved_files/chatGLM_6B_QLoRA_t32 \
     --output_path /tmp/qlora-model \
+    --remote_scripts_dir remote_scripts/chatglm-6b \
     --qbits 0
     ```
-   注意，qbits参数不为4或8时，会在融合lora model和base model后，以非量化的方式保存完整精度的模型。
-4. qlora训练后的4bit量化模型，即运行以下命令得到的，记作`qlora-model-4bit`：
+   注意，qbits参数不为4或8时，会在融合lora model和base model后，以非量化的方式保存fp16的模型。
+4. qlora训练后的chatGLM-6B-4bit量化模型，即运行以下命令得到的，记作`qlora-model-4bit`：
     ```shell
     python3 merge_lora_and_quantize.py \
     --lora_path saved_files/chatGLM_6B_QLoRA_t32 \
     --output_path /tmp/qlora-model-4bit \
+    --remote_scripts_dir remote_scripts/chatglm-6b \
     --qbits 4
     ```
+5. chatGLM2-6B官方非量化模型，即`THUDM/chatglm2-6b`
+6. chatGLM2-6B官方4bit量化模型，即`THUDM/chatglm2-6b-int4`
+7. qlora训练后的chatGLM2-6B非量化模型，即运行以下命令得到的，记作`qlora-model2`：
+    ```shell
+    python3 merge_lora_and_quantize.py \
+    --lora_path saved_files/chatGLM2_6B_QLoRA_t32 \
+    --output_path /tmp/qlora-model2 \
+    --remote_scripts_dir remote_scripts/chatglm2-6b \
+    --qbits 0
+    ```
+8. qlora训练后的chatGLM2-6B-4bit量化模型，即运行以下命令得到的，记作`qlora-model-4bit2`：
+    ```shell
+    python3 merge_lora_and_quantize.py \
+    --lora_path saved_files/chatGLM2_6B_QLoRA_t32 \
+    --output_path /tmp/qlora-model-4bit2 \
+    --remote_scripts_dir remote_scripts/chatglm2-6b \
+    --qbits 4
+    ``` 
 
 我们对推理性能的测试，使用本项目的脚本：`inference_test.py`，统计单位时间内，模型能推理生成的token数量为衡量指标，详见代码逻辑。
 
@@ -304,19 +339,31 @@ python3 inference_test.py --model_path THUDM/chatglm-6b
 
 经过测试，有如下结果：
 
+chatGLM-6B:
+
 |                | qlora-model-4bit | THUDM/chatglm-6b-int4 | qlora-model | THUDM/chatglm-6b |
 |----------------|------------------|-----------------------|-------------|------------------|
 | token_number/s | 18.93            | 16.93                 | 31.92       | 31.88            |
 | gpu memory use |  6G              | 6G                    | 13G         | 13G              |
 
+chatGLM2-6B:
+
+|                | qlora-model-4bit2 | THUDM/chatglm2-6b-int4 | qlora-model2 | THUDM/chatglm2-6b |
+|----------------|-------------------|------------------------|--------------|-------------------|
+| token_number/s | 26                | 26                     | 47.95        | 47.94             |
+| gpu memory use | 6G                | 6G                     | 13G          | 13G               |
+
 结论：
 
-1. 经过qlora训练后保存的模型，无论是否量化为4bit，推理速度与官方原始模型基本一致，int4的情况略有提高
+1. 经过qlora训练后保存的模型，无论是否量化为4bit，推理速度与官方原始模型基本一致，chatGLM-6B的int4的略有提高
 2. 4bit量化后的模型，推理效率均有明显降低，经过查阅资料，这里4bit的量化方法是一种以时间换空间的方法，具体见：https://huggingface.co/blog/zh/hf-bitsandbytes-integration
+3. chatGLM2-6B相比chatGLM-6B的推理效率高了约30%~50%多
 
 理论上qlora训练保存的adapter模型可以和原始模型合并后，再导入其他加速引擎进行加速。
 
-## QLoRA微调前后推理对比（chatGLM2-6B结果待补充）
+## QLoRA微调前后推理对比
+
+chatGLM-6B：
 
 ```text
 输入：
@@ -340,11 +387,28 @@ python3 inference_test.py --model_path THUDM/chatglm-6b
 一款简约而不简单的连衣裙，采用撞色的印花点缀，打造文艺气息，简约的圆领，修饰脸型。衣袖和裙摆的压褶，增添设计感，修身的版型，勾勒出窈窕的身材曲线。
 ```
 
+chatGLM2-6B：
+
+```text
+输入：
+类型#裙*版型#显瘦*风格#文艺*风格#简约*图案#印花*图案#撞色*裙下摆#压褶*裙长#连衣裙*裙领型#圆领
+
+微调前：
+这款裙子,版型显瘦,采用简约文艺风格,图案为印花和撞色设计,裙下摆为压褶裙摆,裙长为连衣裙,适合各种场合穿着,让你舒适自在。圆领设计,优雅清新,让你在任何场合都充满自信。如果你正在寻找一款舒适、时尚、优雅的裙子,不妨 考虑这款吧!
+
+微调后: 
+这款连衣裙简约的设计，撞色印花点缀，丰富了视觉，上身更显时尚。修身的版型，贴合身形，穿着舒适不束缚。圆领的设计，露出精致锁骨，尽显女性优雅气质。下摆压褶的设计，增添立体感，行走间更显飘逸。前短后长的设计，显 得身材比例更加完美。文艺的碎花设计，更显精致。
+```
+
+可以看到chatGLM2-6B在微调前的输出就远好于chatGLM-6B.
+
 #### 关于灾难性遗忘
 
 看到很多朋友表示微调后的模型出现灾难性疑问的问题，无法对微调数据集以外的问题进行正常反应，我对微调后的模型进行了一些其他问题的测试。
 
-多次测试中发现遗忘情况出现较少，但有时会出现输出<unk>的异常情况。
+对chatGLM2-6B，微调后，几乎不存在灾难性疑问，对于数据集以外的问题也可以进行高质量的回答。
+
+chatGLM-6B在多次测试中发现遗忘情况出现较少，但有时会出现输出<unk>的异常情况。
 
 以下是一些正常响应和异常响应的例子：
 
@@ -393,8 +457,6 @@ python3 inference_test.py --model_path THUDM/chatglm-6b
 
 大众是德国品牌，在汽车界有着深厚的历史，拥有德国车严谨的工艺精神，是<UNK>的<UNK>。作为<UNK>，它的设计简单大方，没有多余的装饰，但经典的造型却能够让你<UNK>其中，它的性能也非常出色，具有<UNK>的能力。
 ```
-
-关于这部分异常，将做更多尝试和验证，比如在训练时统一添加同样的前缀。
 
 ## 参考
 
