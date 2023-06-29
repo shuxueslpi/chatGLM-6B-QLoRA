@@ -40,21 +40,21 @@
 - python依赖项
 
     ```text
-    transformers==4.30.0.dev0
     peft==0.4.0.dev0
-    accelerate==0.20.0.dev0
+    transformers==4.30.2
     datasets==2.12.0
     tqdm==4.65.0
     loguru==0.7.0
+    fire==0.5.0
     bitsandbytes==0.39.0
+    wandb==0.15.3
     cpm_kernels==1.0.11
+    accelerate==0.20.3
     sentencepiece==0.1.99
     ```
-  注意：其中带有dev0后缀的包，当前在各个pip源还无法索引到，可先安装低版本后再用以下命令升级，比如安装transformers==4.29.1，再执行以下第一条命令，peft和accelerate类似处理：
+  注意：其中带有dev0后缀的包，当前在各个pip源还无法索引到，可先安装低版本后再用以下命令升级，比如安装peft==0.3.0，再执行以下命令：
   ```shell
-  pip install -q -U git+https://github.com/huggingface/transformers.git
   pip install -q -U git+https://github.com/huggingface/peft.git
-  pip install -q -U git+https://github.com/huggingface/accelerate.git
   ```
 
 ### 推荐环境
@@ -77,9 +77,9 @@ docker exec -ti container_name /bin/bash
 python3 -m pip install --upgrade pip
 
 pip install -q -U bitsandbytes
-pip install -q -U git+https://github.com/huggingface/transformers.git
 pip install -q -U git+https://github.com/huggingface/peft.git
-pip install -q -U git+https://github.com/huggingface/accelerate.git
+pip install transformers==4.30.2
+pip install accelerate==0.20.3
 ```
 
 注：理论上更高版本的transformers库应该可以正常运行本项目。
