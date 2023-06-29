@@ -229,7 +229,7 @@ python3 merge_lora_and_quantize.py \
 
 注意，请完整拷贝此项目，脚本运行时会将`remote_scripts_dir`文件夹中的所有chatGLM官方的脚本复制到最终输出的目录中，方便加载模型。
 
-如果是合并chatglm2-6b则把参数`remote_scripts_dir`修改为`remote_scripts/chatglm-6b`
+如果是合并chatglm2-6b则把参数`remote_scripts_dir`修改为`remote_scripts/chatglm2-6b`
 
 运行完毕后，会输出：
 ```text
