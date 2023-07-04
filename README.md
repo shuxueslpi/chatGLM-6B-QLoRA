@@ -518,6 +518,7 @@ chatGLM-6B在多次测试中发现遗忘情况出现较少，但有时会出现�
 ## 参考
 
 - https://github.com/THUDM/ChatGLM-6B
+- https://github.com/THUDM/ChatGLM2-6B
 - https://huggingface.co/blog/4bit-transformers-bitsandbytes
 - https://huggingface.co/blog/zh/hf-bitsandbytes-integration
 - https://github.com/mymusise/ChatGLM-Tuning
