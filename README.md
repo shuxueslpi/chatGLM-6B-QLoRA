@@ -76,7 +76,7 @@ docker exec -ti container_name /bin/bash
 python3 -m pip install --upgrade pip
 
 pip install -q -U bitsandbytes
-pip install -q peft==0.4.0
+pip install peft==0.4.0
 pip install transformers==4.30.2
 pip install accelerate==0.20.3
 ```
