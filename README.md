@@ -43,7 +43,7 @@
 - python依赖项
 
     ```text
-    peft==0.4.0.dev0
+    peft==0.4.0
     transformers==4.30.2
     datasets==2.12.0
     tqdm==4.65.0
@@ -55,10 +55,6 @@
     accelerate==0.20.3
     sentencepiece==0.1.99
     ```
-  注意：其中带有dev0后缀的包，当前在各个pip源还无法索引到，可先安装低版本后再用以下命令升级，比如安装peft==0.3.0，再执行以下命令：
-  ```shell
-  pip install -q -U git+https://github.com/huggingface/peft.git
-  ```
 
 ### 推荐环境
 
@@ -80,7 +76,7 @@ docker exec -ti container_name /bin/bash
 python3 -m pip install --upgrade pip
 
 pip install -q -U bitsandbytes
-pip install -q -U git+https://github.com/huggingface/peft.git
+pip install -q peft==0.4.0
 pip install transformers==4.30.2
 pip install accelerate==0.20.3
 ```
